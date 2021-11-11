@@ -1,5 +1,6 @@
 import argparse
 import ipaddress
+import json
 import logging
 import os
 import requests
@@ -55,11 +56,11 @@ class ItemClient():
         return requests.get(f"{self.url_prefix}/api/v1/accounts/{n}")
 
     def add_account(self, account_info):
-        return requests.post(f"{self.url_prefix}/api/v1/accounts/add", data=account_info)
+        return requests.post(f"{self.url_prefix}/api/v1/accounts/add", data=json.dumps(account_info))
 
     def edit_account(self, account_info):
         account_id = account_info.get("orgno")
-        return requests.put(f"{self.url_prefix}/api/v1/accounts/edit/{account_id}", data=account_info)
+        return requests.put(f"{self.url_prefix}/api/v1/accounts/edit/{account_id}", data=json.dumps(account_info))
 
     def delete_account(self, account_id):
         return requests.delete(f"{self.url_prefix}/api/v1/accounts/delete/{account_id}")
@@ -82,8 +83,8 @@ def main():
     parser_accounts.add_argument("--number", "-n", help="Number of accounts to retrieve")
 
     parser_add = subparsers.add_parser("add", help="Add an account")
-    parser_add.add_argument("--data", "-d", help="Account information in json format")
-    parser_add.add_argument("--file-path", "-f", help="Account information as json file")
+    parser_add.add_argument("--data", "-d", type=str, help="Account information in json format")
+    parser_add.add_argument("--file-path", "-f", type=str, help="Account information as json file")
 
     parser_edit = subparsers.add_parser("edit", help="Edit an account")
     parser_edit.add_argument("--data", "-d", help="Account information in json format")
@@ -113,14 +114,39 @@ def main():
         except ValueError as e:
             LOGGER.error(f"Invalid IP address: {e}")
             sys.exit(1)
-
     if args.port:
         if not (1 <= args.port <= 65535):
             LOGGER.error(f"Invalid port: {args.port}")
+            sys.exit(1)
 
     client = ItemClient(args.ip, args.port)
     if args.command == "test":
         LOGGER.info(client.test().text)
+    elif args.command == "account":
+        LOGGER.info(client.get_account(args.account_id).json())
+    elif args.command == "accounts":
+        if args.number:
+            LOGGER.info(client.get_accounts(args.number).json())
+        else:
+            LOGGER.info(client.get_accounts().json())
+    elif args.command == "add":
+        if args.data:
+            LOGGER.info(client.add_account(json.loads(args.data)).json())
+        elif args.file_path:
+            data = None
+            with open(args.file_path) as json_file:
+                data = json.load(json_file)
+            LOGGER.info(client.add_account(data).json())
+    elif args.command == "edit":
+        if args.data:
+            LOGGER.info(client.edit_account(json.loads(args.data)).text)
+        elif args.file_path:
+            data = None
+            with open(args.file_path) as json_file:
+                data = json.load(json_file)
+            LOGGER.info(client.edit_account(data).json())
+    elif args.command == "delete":
+        LOGGER.info(client.delete_account(args.account_id).json())
 
 
 if __name__ == "__main__":
