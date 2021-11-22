@@ -25,6 +25,23 @@ URL_ADD = "{}/api/v1/accounts/add"
 URL_EDIT = "{}/api/v1/accounts/edit/{}"
 URL_DELETE = "{}/api/v1/accounts/delete/{}"
 
+class Response(dict):
+    @property
+    def packet_id(self):
+        return self.get("id")
+
+    @property
+    def result(self):
+        return self.get("result", False)
+
+    @property
+    def message(self):
+        return self.get("message", "")
+
+    @property
+    def data(self):
+        return self.get("data", {})
+
 class ItemClient():
     def __init__(self, ip, port):
         self.host = self._validate_ip(ip)
@@ -47,23 +64,23 @@ class ItemClient():
         return "http://{}:{}".format(self.host, self.port)
 
     def test(self):
-        return requests.get("{}/api/v1/test".format(self.url_prefix))
+        return Response(requests.get("{}/api/v1/test".format(self.url_prefix)).json())
 
     def get_account(self, account_id):
-        return requests.get(f"{self.url_prefix}/api/v1/account/{account_id}")
+        return Response(requests.get(f"{self.url_prefix}/api/v1/account/{account_id}").json())
 
     def get_accounts(self, n=0):
-        return requests.get(f"{self.url_prefix}/api/v1/accounts/{n}")
+        return Response(requests.get(f"{self.url_prefix}/api/v1/accounts/{n}").json())
 
     def add_account(self, account_info):
-        return requests.post(f"{self.url_prefix}/api/v1/accounts/add", data=json.dumps(account_info))
+        return Response(requests.post(f"{self.url_prefix}/api/v1/accounts/add", data=json.dumps(account_info)).json())
 
     def edit_account(self, account_info):
         account_id = account_info.get("orgno")
-        return requests.put(f"{self.url_prefix}/api/v1/accounts/edit/{account_id}", data=json.dumps(account_info))
+        return Response(requests.put(f"{self.url_prefix}/api/v1/accounts/edit/{account_id}", data=json.dumps(account_info)).json())
 
     def delete_account(self, account_id):
-        return requests.delete(f"{self.url_prefix}/api/v1/accounts/delete/{account_id}")
+        return Response(requests.delete(f"{self.url_prefix}/api/v1/accounts/delete/{account_id}").json())
 
 def main():
     parser = argparse.ArgumentParser(description="Item's Client")
@@ -121,22 +138,22 @@ def main():
 
     client = ItemClient(args.ip, args.port)
     if args.command == "test":
-        LOGGER.info(client.test().text)
+        LOGGER.info(client.test())
     elif args.command == "account":
-        LOGGER.info(client.get_account(args.account_id).json())
+        LOGGER.info(client.get_account(args.account_id))
     elif args.command == "accounts":
         if args.number:
-            LOGGER.info(client.get_accounts(args.number).json())
+            LOGGER.info(client.get_accounts(args.number))
         else:
-            LOGGER.info(client.get_accounts().json())
+            LOGGER.info(client.get_accounts())
     elif args.command == "add":
         if args.data:
-            LOGGER.info(client.add_account(json.loads(args.data)).json())
+            LOGGER.info(client.add_account(json.loads(args.data)))
         elif args.file_path:
             data = None
             with open(args.file_path) as json_file:
                 data = json.load(json_file)
-            LOGGER.info(client.add_account(data).json())
+            LOGGER.info(client.add_account(data))
     elif args.command == "edit":
         if args.data:
             LOGGER.info(client.edit_account(json.loads(args.data)).text)
@@ -144,9 +161,9 @@ def main():
             data = None
             with open(args.file_path) as json_file:
                 data = json.load(json_file)
-            LOGGER.info(client.edit_account(data).json())
+            LOGGER.info(client.edit_account(data))
     elif args.command == "delete":
-        LOGGER.info(client.delete_account(args.account_id).json())
+        LOGGER.info(client.delete_account(args.account_id))
 
 
 if __name__ == "__main__":
