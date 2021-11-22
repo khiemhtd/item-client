@@ -48,7 +48,7 @@ E.g. adding an account
 ```
 Sample response
 ```
-2021-11-22 03:14:56,859 [INFO] __main__: {'id': 4, 'result': True, 'message': 'Account type added successfully'}
+{'id': 4, 'result': True, 'message': 'Account 6 added successfully'}
 ```
 
 # Usage
