@@ -1,5 +1,7 @@
+import argparse
 import json
 import logging
+import os
 import sys
 
 from requests.exceptions import ConnectionError
@@ -274,10 +276,30 @@ class MainView(QWidget):
 
 
 def main():
+    parser = argparse.ArgumentParser(description="Item's Client")
+    parser.add_argument("-v", "--verbose", action="store_true", help="increase log output verbosity")
+    parser.add_argument('--ip', '-i', type=str, default="127.0.0.1", help="The Rest API server's ip address")
+    parser.add_argument('--port', '-p', type=int, default=8080, help="The Rest API server's port")
+    parser.add_argument('--log-file', '-l', type=str, help="Output logs to specified file")
+    args = parser.parse_args()
+
+    # Sanitize arguments
+    log_level = logging.INFO
+    if args.verbose:
+        log_level = logging.DEBUG
+
+    if args.log_file:
+        # Check if path is valid
+        dir_path = os.path.dirname(os.path.abspath(args.log_file))
+        if dir_path:
+            setup_logging(args.log_file, log_level)
+    else:
+        setup_logging(level=log_level)
+
     setup_logging(level=logging.DEBUG)
     app = QApplication(sys.argv)
     try:
-        main_view = MainView("127.0.0.1", 8080)
+        main_view = MainView(args.ip, args.port)
         main_view.show()
     except Exception as e:
         LOGGER.error(f"Could not launch app: {e}")
