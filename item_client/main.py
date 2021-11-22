@@ -2,6 +2,8 @@ import json
 import logging
 import sys
 
+from requests.exceptions import ConnectionError
+
 from PySide6 import QtCore
 from PySide6.QtWidgets import QApplication, QDialog, QFrame, QGridLayout, QLabel, QPushButton, QScrollArea, QVBoxLayout, QWidget
 
